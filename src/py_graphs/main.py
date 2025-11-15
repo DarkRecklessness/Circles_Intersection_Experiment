@@ -1,53 +1,63 @@
-from random import randint
+import pandas as pd
+import matplotlib.pyplot as plt
+import numpy as np
 
-def perebor():
-    global mas
+DATA_FILENAME = 'results.csv'
 
-    answer = []
-    for a in range(1, 10):
-        for b in range(a + 1, 10):
-            flag = True
-            for u in range(len(mas)):
-                if mas[u][2] == '>':
-                    if not(mas[u][0] * a > mas[u][1] * b):
-                        flag = False
-                        break
-                elif mas[u][2] == '<':
-                    if not (mas[u][0] * a < mas[u][1] * b):
-                        flag = False
-                        break
-            if flag: answer.append((a,b))
-            # if len(answer) > 1: return False
-    print(answer)
-    return answer[0] if len(answer) == 1 else False
+WINDOW_SIZE = 40
 
-mas = []
-vvod = ''
-print('a 2')
-koof_a, koof_b = 2, 1
-while vvod != '=':
-    vvod = input()
-    if vvod == '>':
-        mas.append([koof_a, koof_b, '>'])
-        result = perebor()
-        if result == False:
-            koof = randint(2, 5)
-            koof_b *= koof
-            print(f'b {koof}')
-        else:
-            product = koof_a * result[0] * koof_b * result[1]
-            print(f'a {product // (koof_b * result[1])}')
-            input()
-            print(f'b {product // (koof_a * result[0])}')
-    elif vvod == '<':
-        mas.append([koof_a, koof_b, '<'])
-        result = perebor()
-        if result == False:
-            koof = randint(2, 5)
-            koof_a *= koof
-            print(f'a {koof}')
-        else:
-            product = koof_a * result[0] * koof_b * result[1]
-            print(f'a {product // (koof_b * result[1])}')
-            input()
-            print(f'b {product // (koof_a * result[0])}')
+S_EXACT = 0.25 * np.pi + 1.25 * np.arcsin(0.8) - 1.0
+
+data = pd.read_csv(DATA_FILENAME)
+
+data['Deviation_Wide'] = np.abs(data['Area_Wide'] - S_EXACT) / S_EXACT
+data['Deviation_Narrow'] = np.abs(data['Area_Narrow'] - S_EXACT) / S_EXACT
+
+data['Area_Wide_Trend'] = data['Area_Wide'].rolling(window=WINDOW_SIZE).mean()
+data['Area_Narrow_Trend'] = data['Area_Narrow'].rolling(window=WINDOW_SIZE).mean()
+data['Deviation_Wide_Trend'] = data['Deviation_Wide'].rolling(window=WINDOW_SIZE).mean()
+data['Deviation_Narrow_Trend'] = data['Deviation_Narrow'].rolling(window=WINDOW_SIZE).mean()
+
+# first graph
+
+plt.figure(figsize=(12, 8))
+
+plt.plot(data['N'], data['Area_Wide'], label='Приближение (широкая область)', alpha=0.5)
+plt.plot(data['N'], data['Area_Narrow'], label='Приближение (узкая область)', alpha=0.5)
+
+plt.plot(data['N'], data['Area_Wide_Trend'], color='blue', linestyle='--', linewidth=2, label='Тренд (широкая область)')
+plt.plot(data['N'], data['Area_Narrow_Trend'], color='green', linestyle='--', linewidth=2, label='Тренд (узкая область)')
+
+plt.axhline(y=S_EXACT, color='r', linestyle='-.', label=f'Точное значение S ≈ {S_EXACT:.4f}')
+
+plt.title('График 1: Зависимость приближенной площади от числа точек N')
+plt.xlabel('Количество точек (N)')
+plt.ylabel('Вычисленная площадь (S)')
+plt.grid(True)
+plt.legend()
+plt.tight_layout()
+
+plt.show()
+
+
+# second graph
+
+plt.figure(figsize=(12, 8))
+
+
+plt.plot(data['N'], data['Deviation_Wide'], label='Отклонение (широкая область)', alpha=0.5)
+plt.plot(data['N'], data['Deviation_Narrow'], label='Отклонение (узкая область)', alpha=0.5)
+
+plt.plot(data['N'], data['Deviation_Wide_Trend'], color='blue', linestyle='--', linewidth=2, label='Тренд отклонения (широкая)')
+plt.plot(data['N'], data['Deviation_Narrow_Trend'], color='green', linestyle='--', linewidth=2, label='Тренд отклонения (узкая)')
+
+plt.yscale('log')
+
+plt.title('График 2: Зависимость относительного отклонения от числа точек N')
+plt.xlabel('Количество точек (N)')
+plt.ylabel('Относительное отклонение (логарифмическая шкала)')
+plt.grid(True, which="both", ls="-")
+plt.legend()
+plt.tight_layout()
+
+plt.show()
